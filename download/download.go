@@ -6,6 +6,7 @@ import (
 	"github.com/cavaliercoder/grab"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ var header = map[string]string{
 	"Accept-Encoding": "gzip, deflate, br",
 	"Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
 	"Connection": "keep-alive",
-	"Cookie": "DATA=XI3@4@pjbS1TePcAGPeHdgAAADY",
+	//"Cookie":"DATA=XI5Cm1wjnc@IZGZVmaR0bQAAAG8",
 	"DNT": "1",
 	"Host": "e4ftl01.cr.usgs.gov",
 	"Upgrade-Insecure-Requests": "1",
@@ -66,8 +67,16 @@ func getFileSize(url string)(int64,error)  {
 }
 
 func Down(url,folder string) error {
-	fileName := getFileName(url)
-	filePath := folder + "/" + fileName
+	if len(url) == 0 {
+		return nil
+	}
+
+	fileName,year := getFileName(url)
+	fileDir := path.Join(folder,year)
+	if err := CheckOrMakeDir(fileDir); err != nil {
+		return err
+	}
+	filePath := path.Join(fileDir, fileName)
 
 	if exists(filePath) {
 		size,err := getFileSize(url)
@@ -90,7 +99,7 @@ func Down(url,folder string) error {
 		}
 	}
 
-	return d(folder,url)
+	return d(fileDir,url)
 }
 
 
@@ -113,24 +122,24 @@ func exists(path string)bool  {
 	return	true
 }
 
-func getFileName(url string)string  {
+func getFileName(url string)(string,string)  {
 	url_parse := strings.Split(url,"/")
-	return url_parse[len(url_parse)-1]
+	return url_parse[len(url_parse)-1],strings.Split(url_parse[len(url_parse)-2],".")[0]
 }
 
-func Mkdir(path string)error  {
-	return os.Mkdir(path,0777)
+func Mkdir(path string)  {
+	os.Mkdir(path,0777)
 }
 
 func CheckOrMakeDir(path string)error  {
 	if exist := exists(path);!exist {
-		return Mkdir(path)
+		Mkdir(path)
 	}
 
 	return nil
 }
 
-func d(folder,url string) error {
+func d(folder, url string) error {
 	client := grab.NewClient()
 	//
 	//cookiejar,err := cookiejar.New(nil)
@@ -180,4 +189,8 @@ func d(folder,url string) error {
 		}
 
 	return nil
+}
+
+func SetCookie(cookie string)  {
+	header["Cookie"] = cookie
 }

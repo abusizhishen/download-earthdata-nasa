@@ -1,33 +1,40 @@
 package main
 
 import (
+	"crawler/auth"
 	"crawler/download"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 )
 
-var userPath = "conf/user.json"
-var loginPagr = "https://urs.earthdata.nasa.gov/home"
+
 var FilePath = "china-2000-2015.txt"
-var urlError = []string{}
-var folder = "../data"
+var folder = "data"
 
 func main() {
 	var now = time.Now()
-
 	url_str := getUrls()
 	urls := strings.Split(url_str, "\n")
-	//urls = urls[0:1]
-	fmt.Println("总文件数:",len(urls))
-	fmt.Println("计算总大小中。。。")
-	var size = download.GetTotalSize(urls)
-	fmt.Println(fmt.Sprintf("总下载大小:%dM", size))
+	sort.Strings(urls)
 
-	var ch = make(chan string,3)
+	cookie,err := GetCookData()
+	if err != nil {
+		panic(err)
+	}
+
+	if len(cookie) == 0 {
+		fmt.Println("cook data数据获取失败")
+		return
+	}
+
+	download.SetCookie(cookie)
+
+	var nums = 4
+	var ch = make(chan string,nums)
 	var wg sync.WaitGroup
 	wg.Add(len(urls))
 
@@ -58,9 +65,8 @@ func main() {
 		}
 	}
 
-	for i:=0;i<5;i++ {
+	for i:=0;i<nums;i++ {
 		go consumer()
-		time.Sleep(time.Second)
 	}
 
 	wg.Wait()
@@ -84,12 +90,6 @@ type RowFieldRange struct {
 	FieldStart 	int
 	FieldEnd 	int
 	areaList 	func(RowFieldRange)[]string
-}
-
-func login(u User)  {
-	//var req = http.Request{}
-	//
-	//var client = http.Client{}
 }
 
 func getAreaList()[]string  {
@@ -124,22 +124,6 @@ func getAreaList()[]string  {
 	return listFun()
 }
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-func getUserLoginInfoFromJson(path string) (User,error) {
-	bytes_data,err := ioutil.ReadFile(path)
-	if err != nil {
-		return User{},err
-	}
-
-	var user User
-	err = json.Unmarshal(bytes_data,&user)
-	return user,err
-}
-
 func getUrls()string  {
 	bytes_data,err := ioutil.ReadFile(FilePath)
 	if err != nil {
@@ -148,3 +132,14 @@ func getUrls()string  {
 
 	return string(bytes_data)
 }
+
+func GetCookData()(string,error)  {
+	cook,err := auth.Login()
+	if err != nil {
+		panic(err)
+	}
+
+	cookie := cook.String()
+	return auth.GetCookieData(cookie)
+}
+
