@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crawler/auth"
-	"crawler/download"
+	"download-earthdata-nasa/auth"
+	"download-earthdata-nasa/download"
 	"fmt"
 	"io/ioutil"
 	"sort"

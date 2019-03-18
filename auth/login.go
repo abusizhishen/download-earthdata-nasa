@@ -27,8 +27,8 @@ var header = map[string]string{
 var form = map[string]string{
 	"utf8": "✓",
 	"authenticity_token": "",
-	"username": "meili0318.cn",
-	"password": "Lml1234-",
+	"username": "",
+	"password": "",
 	"client_id":"",
 	"redirect_uri":"",
 	"commit": "Log in",
